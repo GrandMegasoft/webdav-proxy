@@ -1,5 +1,5 @@
-const https = require('https');  // Оставляем require для built-in модулей (Vercel позволяет в functions)
-const { URL } = require('url');
+import https from 'https';
+import { URL } from 'url';
 
 const realBase = 'https://grand-keenetic.netcraze.pro/webdav';
 
