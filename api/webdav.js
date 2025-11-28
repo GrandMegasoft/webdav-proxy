@@ -1,20 +1,23 @@
-const https = require('https');
+const https = require('https');  // Оставляем require для built-in модулей (Vercel позволяет в functions)
 const { URL } = require('url');
 
 const realBase = 'https://grand-keenetic.netcraze.pro/webdav';
 
-module.exports = (req, res) => {
+export default function handler(req, res) {
   const { url: relativePath = '/' } = req.query;
   const fullUrl = new URL(relativePath, realBase).href;
   const method = req.method;
   let body = '';
 
-  // Собираем body
-  req.on('data', chunk => { body += chunk; });
+  // Собираем body (для PROPFIND XML)
+  req.on('data', (chunk) => {
+    body += chunk;
+  });
+
   req.on('end', () => {
     forwardRequest(req, res, fullUrl, method, body);
   });
-};
+}
 
 function forwardRequest(req, res, fullUrl, method, body) {
   // Auth check
@@ -54,11 +57,17 @@ function forwardRequest(req, res, fullUrl, method, body) {
   if (body) {
     options.headers['Content-Type'] = 'text/xml; charset=utf-8';
     options.headers['Content-Length'] = Buffer.byteLength(body);
-    options.headers['Depth'] = 'infinity';
+    if (!options.headers['Depth']) {
+      options.headers['Depth'] = 'infinity';
+    }
   }
 
   const proxyReq = https.request(options, (proxyRes) => {
-    res.writeHead(proxyRes.statusCode, proxyRes.headers);
+    // Forward headers, excluding some to avoid conflicts
+    const headers = { ...proxyRes.headers };
+    delete headers['transfer-encoding'];
+    delete headers['content-encoding'];
+    res.writeHead(proxyRes.statusCode, headers);
     proxyRes.pipe(res);
   });
 
@@ -68,6 +77,8 @@ function forwardRequest(req, res, fullUrl, method, body) {
     res.end('Proxy error: ' + err.message);
   });
 
-  if (body) proxyReq.write(body);
+  if (body) {
+    proxyReq.write(body);
+  }
   proxyReq.end();
 }
