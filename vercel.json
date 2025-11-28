@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/webdav.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/webdav/(.*)",
+      "dest": "/api/webdav.js?url=/$1"
+    },
+    {
+      "src": "/api/webdav",
+      "dest": "/api/webdav.js?url=/"
+    }
+  ]
+}
