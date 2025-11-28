@@ -1,9 +1,9 @@
-const https = require('https');
-const { URL } = require('url');
+import https from 'https';
+import { URL } from 'url';
 
 const realBase = 'https://grand-keenetic.netcraze.pro/webdav';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   try {
     const { url: relativePath = '/' } = req.query;
     const fullUrl = new URL(relativePath, realBase).href;
@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
     res.writeHead(500, { 'Content-Type': 'text/plain' });
     res.end('Internal server error');
   }
-};
+}
 
 function forwardRequest(req, res, fullUrl, method, body) {
   try {
