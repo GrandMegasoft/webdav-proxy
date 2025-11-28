@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     const { url: relativePath = '/' } = req.query;
     const fullUrl = new URL(relativePath, realBase).href;
     const method = req.method;
-    
+
     // Handle OPTIONS request
     if (method === 'OPTIONS') {
       res.writeHead(200, {
@@ -74,16 +74,15 @@ function forwardRequest(req, res, fullUrl, method, body) {
     if (body && body.length > 0) {
       options.headers['Content-Type'] = req.headers['content-type'] || 'text/xml; charset=utf-8';
       options.headers['Content-Length'] = Buffer.byteLength(body);
-      
+
       if (method === 'PROPFIND' && !options.headers['Depth']) {
         options.headers['Depth'] = '1';
       }
     }
 
-    // Remove headers that might cause issues, but keep content-encoding if present
+    // Remove headers that might cause issues
     delete options.headers['connection'];
     delete options.headers['transfer-encoding'];
-    // Note: We keep 'content-encoding' as it might be needed for WebDAV
 
     console.log('Forwarding request:', { method, fullUrl, bodyLength: body ? body.length : 0 });
 
@@ -91,12 +90,12 @@ function forwardRequest(req, res, fullUrl, method, body) {
       // Forward headers, excluding some to avoid conflicts
       const headers = { ...proxyRes.headers };
       delete headers['transfer-encoding'];
-      
+
       // Add CORS headers
       headers['Access-Control-Allow-Origin'] = '*';
       headers['Access-Control-Allow-Methods'] = 'GET, PUT, POST, PROPFIND, DELETE, MKCOL, HEAD, OPTIONS';
       headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, Depth';
-      
+
       res.writeHead(proxyRes.statusCode, headers);
       proxyRes.pipe(res);
     });
@@ -110,7 +109,7 @@ function forwardRequest(req, res, fullUrl, method, body) {
     if (body && body.length > 0) {
       proxyReq.write(body);
     }
-    
+
     proxyReq.end();
   } catch (error) {
     console.error('Forward request error:', error);
