@@ -40,6 +40,11 @@ export default async function handler(req, res) {
       }
     }
 
+    // For PROPFIND, if no body provided, use a default one
+    if (method === 'PROPFIND' && (!body || body.length === 0)) {
+      body = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><getlastmodified/><getcontentlength/><getcontenttype/><resourcetype/></prop></propfind>';
+    }
+
     forwardRequest(req, res, fullUrl, method, body);
   } catch (error) {
     console.error('Handler error:', error);
@@ -70,26 +75,22 @@ function forwardRequest(req, res, fullUrl, method, body) {
       options.headers['Content-Type'] = req.headers['content-type'] || 'text/xml; charset=utf-8';
       options.headers['Content-Length'] = Buffer.byteLength(body);
       
-      if (!options.headers['Depth']) {
-        options.headers['Depth'] = 'infinity';
-      }
-    } else if (method === 'PROPFIND') {
-      options.headers['Content-Length'] = 0;
-      if (!options.headers['Depth']) {
+      if (method === 'PROPFIND' && !options.headers['Depth']) {
         options.headers['Depth'] = '1';
       }
     }
 
-    // Remove headers that might cause issues
-    delete options.headers['content-length'];
+    // Remove headers that might cause issues, but keep content-encoding if present
     delete options.headers['connection'];
     delete options.headers['transfer-encoding'];
+    // Note: We keep 'content-encoding' as it might be needed for WebDAV
+
+    console.log('Forwarding request:', { method, fullUrl, bodyLength: body ? body.length : 0 });
 
     const proxyReq = https.request(options, (proxyRes) => {
       // Forward headers, excluding some to avoid conflicts
       const headers = { ...proxyRes.headers };
       delete headers['transfer-encoding'];
-      delete headers['content-encoding'];
       
       // Add CORS headers
       headers['Access-Control-Allow-Origin'] = '*';
