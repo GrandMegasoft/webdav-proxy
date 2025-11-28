@@ -1,7 +1,7 @@
 {
   "name": "webdav-proxy",
   "version": "1.0.0",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "vercel dev",
     "start": "vercel dev"
