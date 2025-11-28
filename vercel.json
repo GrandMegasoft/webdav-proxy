@@ -9,11 +9,11 @@
   "routes": [
     {
       "src": "/api/webdav/(.*)",
-      "dest": "/api/webdav.js?url=/$1"
+      "dest": "/api/webdav.js"
     },
     {
       "src": "/api/webdav",
-      "dest": "/api/webdav.js?url=/"
+      "dest": "/api/webdav.js"
     }
   ]
 }
