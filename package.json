@@ -1,9 +1,16 @@
 {
-  "name": "webdav-proxy",
+  "name": "webdav-proxy-vercel",
   "version": "1.0.0",
+  "description": "WebDAV proxy for Vercel",
+  "main": "index.js",
   "scripts": {
-    "dev": "vercel dev",
-    "start": "vercel dev"
+    "start": "node index.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "express": "^4.18.0",
+    "webdav-server": "^2.6.2"
+  },
+  "keywords": ["webdav", "proxy", "vercel"],
+  "author": "YourName",
+  "license": "MIT"
 }
