@@ -1,13 +1,12 @@
 {
   "version": 2,
   "functions": {
-    "index.js": {
-      "runtime": "nodejs20.x"
+    "api/webdav.js": {
+      "runtime": "@vercel/node@18"
     }
   },
   "rewrites": [
-    { "source": "/api/webdav/(.*)", "destination": "/index.js" },
-    { "source": "/api/webdav", "destination": "/index.js" },
-    { "source": "/(.*)", "destination": "/index.js" }
+    { "source": "/api/webdav/:path*", "destination": "/api/webdav.js" },
+    { "source": "/api/webdav", "destination": "/api/webdav.js" }
   ]
 }
