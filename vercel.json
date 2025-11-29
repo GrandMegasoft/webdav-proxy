@@ -1,7 +1,14 @@
 {
   "version": 2,
-  "rewrites": [
-    { "source": "/api/webdav/:path*", "destination": "/api/webdav.js" },
-    { "source": "/api/webdav", "destination": "/api/webdav.js" }
-  ]
+  "routes": [
+    {
+      "src": "/api/webdav/(.*)",
+      "dest": "/api/webdav.js"
+    }
+  ],
+  "functions": {
+    "api/webdav.js": {
+      "runtime": "@vercel/node"
+    }
+  }
 }
