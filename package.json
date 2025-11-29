@@ -1,15 +1,19 @@
 {
   "name": "webdav-proxy-render",
   "version": "1.0.0",
-  "description": "WebDAV HTTP proxy for Render",
+  "description": "WebDAV HTTP proxy for Render to bypass InfinityFree captcha",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.18.0"
+    "express": "^4.18.0",
+    "http-proxy-middleware": "^2.0.6"
   },
   "engines": {
     "node": "18.x"
-  }
+  },
+  "keywords": ["webdav", "proxy", "render", "infinityfree"],
+  "author": "YourName",
+  "license": "MIT"
 }
