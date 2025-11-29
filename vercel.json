@@ -1,19 +1,13 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/webdav.cjs",
-      "use": "@vercel/node"
+  "functions": {
+    "index.js": {
+      "runtime": "nodejs20.x"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/webdav/(.*)",
-      "dest": "/api/webdav.cjs"
-    },
-    {
-      "src": "/api/webdav",
-      "dest": "/api/webdav.cjs"
-    }
+  },
+  "rewrites": [
+    { "source": "/api/webdav/(.*)", "destination": "/index.js" },
+    { "source": "/api/webdav", "destination": "/index.js" },
+    { "source": "/(.*)", "destination": "/index.js" }
   ]
 }
