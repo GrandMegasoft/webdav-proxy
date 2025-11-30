@@ -18,19 +18,19 @@ app.use((req, res, next) => {
 });
 
 const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,  // Ignore cert errors
-  minVersion: 'TLSv1',  // Allow old TLS
+  rejectUnauthorized: false,
+  minVersion: 'TLSv1',
   keepAlive: true,
   timeout: 10000
 });
 
 app.use('/api/webdav', createProxyMiddleware({
   target: targetServer,
-  changeOrigin: false,
-  pathRewrite: { '^/api/webdav': '/webdav' },
+  changeOrigin: true,  // Changed to true for better origin handling
+  secure: false,  // Disable middleware SSL checks (let agent handle)
   agent: httpsAgent,
   onProxyReq: (proxyReq, req, res) => {
-    console.log(`Proxying ${req.method} ${req.originalUrl} to ${targetServer}/webdav`);
+    console.log(`Proxying ${req.method} ${req.originalUrl} to ${targetServer}`);
     if (req.method === 'PROPFIND') {
       if (!req.headers['depth']) proxyReq.setHeader('Depth', '0');
     }
