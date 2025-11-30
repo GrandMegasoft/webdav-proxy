@@ -11,6 +11,6 @@
     "http-proxy-middleware": "^2.0.6"
   },
   "engines": {
-    "node": "20.x"  // Upgrade to active LTS (fixes old OpenSSL issues)
+    "node": "20.x"  
   }
 }
