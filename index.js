@@ -1,6 +1,5 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const https = require('https');
 
 const app = express();
 
@@ -9,7 +8,7 @@ const targetServer = process.env.WEBDAV_SERVER || 'https://grand-keenetic.netcra
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PROPFIND, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type, Depth');
+  res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type');
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
   } else {
@@ -17,27 +16,16 @@ app.use((req, res, next) => {
   }
 });
 
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,
-  minVersion: 'TLSv1',
-  keepAlive: true,
-  timeout: 10000
-});
-
 app.use('/api/webdav', createProxyMiddleware({
   target: targetServer,
-  changeOrigin: true,  // Changed to true for better origin handling
-  secure: false,  // Disable middleware SSL checks (let agent handle)
-  agent: httpsAgent,
+  changeOrigin: false,
+  pathRewrite: { '^/api/webdav': '/webdav/' },
   onProxyReq: (proxyReq, req, res) => {
-    console.log(`Proxying ${req.method} ${req.originalUrl} to ${targetServer}`);
-    if (req.method === 'PROPFIND') {
-      if (!req.headers['depth']) proxyReq.setHeader('Depth', '0');
-    }
+    console.log(`Proxying ${req.method} ${req.url} to ${targetServer}/webdav/`);
   },
   onError: (err, req, res) => {
-    console.error('Proxy error:', err.message);
-    res.status(500).send('Proxy error: ' + err.message);
+    console.error('Proxy error:', err);
+    res.status(500).send('Proxy error');
   },
   onProxyRes: (proxyRes, req, res) => {
     console.log(`Response status: ${proxyRes.statusCode}`);
