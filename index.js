@@ -22,14 +22,15 @@ app.use((req, res, next) => {
 
 const httpsAgent = new https.Agent({
   rejectUnauthorized: false,  // Bypass SSL cert issues
-  secureOptions: require('constants').SSL_OP_NO_TLSv1_3  // Force TLS 1.2, not 1.3 (fixed syntax)
+  secureOptions: require('constants').SSL_OP_NO_TLSv1_3  // Force TLS 1.2, not 1.3
 });
 
 // Custom handler for PROPFIND and OPTIONS to fix 405 errors in Android app
-app.all('/api/webdav*', (req, res, next) => {
-  console.log(`[HANDLER] Received ${req.method} for ${req.url} from IP ${req.ip}`);
+app.all('/api/webdav(/.*)?', (req, res, next) => {
+  console.log(`[HANDLER] All requests to ${req.method} ${req.url} from IP ${req.ip}`);
   if (req.method === 'PROPFIND' || req.method === 'OPTIONS') {
-    // Manual proxy using https.request for WebDAV-specific methods to bypass http-proxy-middleware limitations
+    console.log(`[HANDLER] PROPFIND/OPTIONS detected for ${req.url}`);
+    // Manual proxy using https.request for WebDAV-specific methods
     const options = {
       hostname: 'grand-keenetic.netcraze.pro',
       port: 443,
@@ -38,39 +39,39 @@ app.all('/api/webdav*', (req, res, next) => {
       headers: {
         ...req.headers,
         'Host': 'grand-keenetic.netcraze.pro',
-        'User-Agent': 'Mozilla/5.0 (Android; Mobile; rv:1.0) Android-WebDAV-App/1.0',  // Mimic browser UA to avoid blocks
-        'Authorization': req.headers.authorization,  // Forward Basic auth
+        'User-Agent': 'Mozilla/5.0 (Android; Mobile; rv:1.0) Android-WebDAV-App/1.0',  
+        'Authorization': req.headers.authorization,  
         'Depth': req.method === 'PROPFIND' ? '0' : req.headers.depth,
         'Content-Type': req.headers['content-type'] || 'application/xml'
       },
-      agent: httpsAgent  // Use same agent for SSL bypass
+      agent: httpsAgent  
     };
-    console.log(`[HANDLER] Proxying to ${options.hostname}:${options.port}${options.path}`);
+    console.log(`[HANDLER] Proxying PROPFIND/OPTIONS to ${options.hostname}:${options.port}${options.path}`);
     const proxyReq = https.request(options, (proxyRes) => {
-      console.log(`[HANDLER] Target response status: ${proxyRes.statusCode}`);
+      console.log(`[HANDLER] Target PROPFIND response status: ${proxyRes.statusCode}`);
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
-      proxyRes.pipe(res);  // Stream response back
+      proxyRes.pipe(res);
     });
     proxyReq.on('error', err => {
-      console.error('[HANDLER] Error:', err);
+      console.error('[HANDLER] PROPFIND/OPTIONS Error:', err);
       res.status(500).send(`Proxy error: ${err.message}`);
     });
     if (req.body) {
-      proxyReq.write(req.body);  // Send XML body for PROPFIND
+      proxyReq.write(req.body);
     }
     proxyReq.end();
   } else {
-    next();  // For other methods, proceed to http-proxy-middleware
+    next();  
   }
 });
 
-// Proxy middleware for non-WebDAV-specific methods (GET, POST, PUT, DELETE)
+// Proxy middleware for non-WebDAV-specific methods
 app.use('/api/webdav', createProxyMiddleware({
   target: targetServer,
   changeOrigin: true,
   pathRewrite: { '^/api/webdav': '/webdav' },
   agent: httpsAgent,
-  timeout: 30000,  // Add timeout to avoid hangs
+  timeout: 30000,  
   onProxyReq: (proxyReq, req, res) => {
     console.log(`[OTHER] Proxying ${req.method} ${req.url}`);
     proxyReq.setHeader('User-Agent', 'Mozilla/5.0 (Android; Mobile; rv:1.0) Android-WebDAV-App/1.0');
