@@ -18,9 +18,8 @@ app.use((req, res, next) => {
 });
 
 const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,  // Ignore all cert errors (e.g., self-signed, expired)
-  minVersion: 'TLSv1',  // Allow TLS 1.0+ (works with old servers)
-  maxVersion: 'TLSv1_3',
+  rejectUnauthorized: false,  // Ignore cert errors
+  minVersion: 'TLSv1',  // Allow old TLS
   keepAlive: true,
   timeout: 10000
 });
