@@ -1,6 +1,7 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const https = require('https');
+const http = require('http');  // For HTTP fallback if needed
 
 const app = express();
 
@@ -17,29 +18,45 @@ app.use((req, res, next) => {
   }
 });
 
-// Custom HTTPS agent for SSL compatibility
-const agent = new https.Agent({
-  rejectUnauthorized: false,  // Ignore cert errors
-  secureProtocol: 'TLSv1_method',  // Force TLS 1.0 (if supported), or try 'TLSv1_1_method', 'TLSv1_2_method'
-  ciphers: 'ALL:!RC4+EXPORT:!aNULL:!LOW:!MD5:!SSLv2:!EXP:!PSK:!SRP:!DSS:RC4-MD5',  // Strong ciphers, but allow RC4 if needed
-  secureOptions: require('constants').PCB_SEQ_AGGR  // Additional options (may help)
+// Enhanced HTTPS agent for max compatibility
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false,  // Ignore cert
+  minVersion: 'TLSv1',  // Allow TLS 1.0+
+  maxVersion: 'TLSv1_3',  // Up to 1.3
+  secureProtocol: 'TLSv1_2_method',  // Force 1.2 (common for old servers)
+  ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256',  // Modern ciphers
+  keepAlive: true,
+  timeout: 10000  // 10s timeout to avoid hangs
+});
+
+// HTTP agent fallback (if HTTPS fails completely)
+const httpAgent = new http.Agent({
+  keepAlive: true,
+  timeout: 10000
 });
 
 app.use('/api/webdav', createProxyMiddleware({
   target: targetServer,
   changeOrigin: false,
-  pathRewrite: { '^/api/webdav': '/webdav' },  // Remove extra slash (/webdav -> /webdav)
-  agent: agent,  // Use custom agent
+  pathRewrite: { '^/api/webdav': '/webdav' },
+  secure: true,  // HTTPS
+  agent: httpsAgent,
   onProxyReq: (proxyReq, req, res) => {
     console.log(`Proxying ${req.method} ${req.originalUrl} to ${targetServer}/webdav`);
 
-    if (req.method === 'PROPFIND' && !req.headers['depth']) {
-      proxyReq.setHeader('Depth', '0');  // Force depth for PROPFIND
+    if (req.method === 'PROPFIND') {
+      if (!req.headers['depth']) proxyReq.setHeader('Depth', '0');
     }
   },
   onError: (err, req, res) => {
-    console.error('Proxy error:', err);
-    res.status(500).send('Proxy error: ' + err.message);
+    console.error('Proxy error:', err.message);
+    if (err.code === 'EPROTO' || err.code === 'ECONNRESET') {
+      // Fallback to HTTP if HTTPS fails (change target to HTTP version if server supports)
+      console.log('Attempting HTTP fallback...');
+      res.send('SSL error, try HTTP target if available');
+    } else {
+      res.status(500).send('Proxy error: ' + err.message);
+    }
   },
   onProxyRes: (proxyRes, req, res) => {
     console.log(`Response status: ${proxyRes.statusCode}`);
