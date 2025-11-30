@@ -1,6 +1,6 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const https = require('https'); // For SSL agent
+const https = require('https');
 
 const app = express();
 
@@ -17,22 +17,29 @@ app.use((req, res, next) => {
   }
 });
 
+// Custom HTTPS agent for SSL compatibility
+const agent = new https.Agent({
+  rejectUnauthorized: false,  // Ignore cert errors
+  secureProtocol: 'TLSv1_method',  // Force TLS 1.0 (if supported), or try 'TLSv1_1_method', 'TLSv1_2_method'
+  ciphers: 'ALL:!RC4+EXPORT:!aNULL:!LOW:!MD5:!SSLv2:!EXP:!PSK:!SRP:!DSS:RC4-MD5',  // Strong ciphers, but allow RC4 if needed
+  secureOptions: require('constants').PCB_SEQ_AGGR  // Additional options (may help)
+});
+
 app.use('/api/webdav', createProxyMiddleware({
   target: targetServer,
   changeOrigin: false,
-  pathRewrite: { '^/api/webdav': '/webdav/' },
-  agent: new https.Agent({ rejectUnauthorized: false }), // Fix EPROTO: ignore cert validation (for self-signed/old SSL)
+  pathRewrite: { '^/api/webdav': '/webdav' },  // Remove extra slash (/webdav -> /webdav)
+  agent: agent,  // Use custom agent
   onProxyReq: (proxyReq, req, res) => {
-    console.log(`Proxying ${req.method} ${req.originalUrl} to ${targetServer}/webdav/`);
+    console.log(`Proxying ${req.method} ${req.originalUrl} to ${targetServer}/webdav`);
 
-    // Force Depth:0 for PROPFIND (to avoid 403 on infinite depth)
-    if (req.method === 'PROPFIND') {
-      proxyReq.setHeader('Depth', '0');
+    if (req.method === 'PROPFIND' && !req.headers['depth']) {
+      proxyReq.setHeader('Depth', '0');  // Force depth for PROPFIND
     }
   },
   onError: (err, req, res) => {
     console.error('Proxy error:', err);
-    res.status(500).send('Proxy error');
+    res.status(500).send('Proxy error: ' + err.message);
   },
   onProxyRes: (proxyRes, req, res) => {
     console.log(`Response status: ${proxyRes.statusCode}`);
