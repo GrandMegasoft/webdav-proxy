@@ -3,10 +3,10 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 
-// Только WEBDAV_SERVER для target
-const targetServer = process.env.WEBDAV_SERVER || 'https://grand-keenetic.netcraze.pro/webdav';
+// Только target сервер (base, без /webdav)
+const targetServer = process.env.WEBDAV_SERVER || 'https://grand-keenetic.netcraze.pro';
 
-// CORS для Android/WebDAV (предотвращает ошибки коннекта)
+// CORS для Android/WebDAV
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PROPFIND, OPTIONS');
@@ -18,13 +18,13 @@ app.use((req, res, next) => {
   }
 });
 
-// Прокси для /api/webdav/ → к вашему серверу, без добавления auth
+// Прокси для /api/webdav/ → к серверу /webdav, без auth (app сам)
 app.use('/api/webdav', createProxyMiddleware({
   target: targetServer,
   changeOrigin: true,
-  pathRewrite: { '^/api/webdav': '/webdav' },  // /api/webdav → /webdav на вашем сервере
+  pathRewrite: { '^/api/webdav': '/webdav' },  // /api/webdav -> /webdav на https://grand-keenetic.netcraze.pro/webdav
   onProxyReq: (proxyReq, req, res) => {
-    console.log(`Proxying ${req.method} ${req.originalUrl} to ${targetServer}`);
+    console.log(`Proxying ${req.method} ${req.url} to ${targetServer}/webdav`);
   },
   onError: (err, req, res) => {
     console.error('Proxy error:', err);
@@ -35,7 +35,7 @@ app.use('/api/webdav', createProxyMiddleware({
   }
 }));
 
-// Root route
+// Root
 app.get('/', (req, res) => {
   res.send('WebDAV Proxy on Render is running! Use /api/webdav/ for WebDAV.');
 });
