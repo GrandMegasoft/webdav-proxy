@@ -1,12 +1,12 @@
-const express = require('express');
+const express = require('Express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 
-// Только target сервер (base, без /webdav)
+// Target base
 const targetServer = process.env.WEBDAV_SERVER || 'https://grand-keenetic.netcraze.pro';
 
-// CORS для Android/WebDAV
+// CORS
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PROPFIND, OPTIONS');
@@ -18,13 +18,15 @@ app.use((req, res, next) => {
   }
 });
 
-// Прокси для /api/webdav/ → к серверу /webdav, без auth (app сам)
+// Прокси
 app.use('/api/webdav', createProxyMiddleware({
   target: targetServer,
   changeOrigin: true,
-  pathRewrite: { '^/api/webdav': '/webdav' },  // /api/webdav -> /webdav на https://grand-keenetic.netcraze.pro/webdav
+  pathRewrite: { '^/api/webdav': '/webdav/' },  // Добавлен slash: /api/webdav -> /webdav/ (серверы WebDAV часто требуют для директорий)
   onProxyReq: (proxyReq, req, res) => {
-    console.log(`Proxying ${req.method} ${req.url} to ${targetServer}/webdav`);
+    // Добавьте host header для обхода host checks на сервере
+    proxyReq.setHeader('host', 'grand-keenetic.netcraze.pro');
+    console.log(`Proxying ${req.method} ${req.url} to ${targetServer}/webdav/> );
   },
   onError: (err, req, res) => {
     console.error('Proxy error:', err);
