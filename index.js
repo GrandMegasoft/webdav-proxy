@@ -39,7 +39,7 @@ app.all('/api/webdav(/.*)?', (req, res, next) => {
       headers: {
         ...req.headers,
         'Host': 'grand-keenetic.netcraze.pro',
-        'User-Agent': 'Mozilla/5.0 (Android; Mobile; rv:1.0) Android-WebDAV-App/1.0',  
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 YaBrowser/25.10.0.2525 Yowser/2.5 Safari/537.36',  
         'Authorization': req.headers.authorization,  
         'Depth': req.method === 'PROPFIND' ? '0' : req.headers.depth,
         'Content-Type': req.headers['content-type'] || 'application/xml'
